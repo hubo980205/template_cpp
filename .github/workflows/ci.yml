@@ -5,7 +5,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # 明确指定 Ubuntu 20.04
+    runs-on: ubuntu-latest  # 明确指定 Ubuntu latest
     strategy:
       matrix:
         conan_profile: [debug, release]  # 可扩展为 ['debug', 'release', 'arm-linux'] 等
