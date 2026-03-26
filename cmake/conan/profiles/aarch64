@@ -1,0 +1,16 @@
+[settings]
+arch=armv8
+build_type=Release
+compiler=gcc
+compiler.cppstd=gnu17
+compiler.libcxx=libstdc++11
+compiler.version=13
+os=Linux
+[buildenv]
+CC=aarch64-linux-gnu-gcc-13
+CXX=aarch64-linux-gnu-g++-13
+LD=aarch64-linux-gnu-ld
+
+[conf]
+tools.build:compiler_executables={"c": "aarch64-linux-gnu-gcc", "cpp": "aarch64-linux-gnu-g++"}
+tools.cmake.cmaketoolchain:generator=Unix Makefiles

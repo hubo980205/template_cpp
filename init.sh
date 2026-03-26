@@ -25,21 +25,23 @@ usage() {
 }
 
 list_profiles() {
-    if [[ ! -d "$PROFILES_DIR" ]]; then
-        echo "Conan profiles 目录不存在: $PROFILES_DIR"
-        echo "请先运行 'conan profile detect' 或手动创建 profiles"
-        exit 1
+    # 确保 profiles 目录存在，否则创建一个空的以便列出
+    mkdir -p "$PROFILES_DIR"
+    
+    if compgen -G "$PROFILES_DIR/*" > /dev/null 2>&1; then
+        echo "可用的 Conan profiles:"
+        for profile in "$PROFILES_DIR"/*; do
+            if [[ -f "$profile" ]]; then
+                basename "$profile"
+            fi
+        done | sort
+    else
+        echo "Conan profiles 目录为空: $PROFILES_DIR"
+        echo "请先运行 'conan profile detect' 或将 profile 文件放入项目 cmake/conan/profiles/ 目录后使用 -p 选项。"
     fi
-
-    echo "可用的 Conan profiles:"
-    for profile in "$PROFILES_DIR"/*; do
-        if [[ -f "$profile" ]]; then
-            basename "$profile"
-        fi
-    done | sort
 }
 
-# 解析参数
+# === 第一步：解析命令行参数 ===
 PROFILE=""
 BUILD_DIR=""
 SHOW_LIST=false
@@ -54,14 +56,33 @@ while getopts "p:b:lh" opt; do
     esac
 done
 
-# 如果请求列出 profiles
+# === 第二步：如果请求列出 profiles，则立即执行并退出 ===
 if [[ "$SHOW_LIST" == true ]]; then
     list_profiles
     exit 0
 fi
 
-# 如果未指定 profile，提示并列出
-if [[ -z "$PROFILE" ]]; then
+# === 第三步：处理 profile 同步逻辑（现在 PROFILE 已知）===
+PROJECT_PROFILES="$PROJECT_ROOT/cmake/conan/profiles"
+if [[ -n "$PROFILE" ]]; then
+    # 如果项目内存在同名 profile，则同步到 Conan 目录
+    if [[ -f "$PROJECT_PROFILES/$PROFILE" ]]; then
+        mkdir -p "$PROFILES_DIR"
+        echo "ℹ️ 使用项目内 profile: $PROJECT_PROFILES/$PROFILE"
+        cp "$PROJECT_PROFILES/$PROFILE" "$PROFILES_DIR/"
+    fi
+
+    # 如果 Conan 目录里还是没有这个 profile，报错
+    if [[ ! -f "$PROFILES_DIR/$PROFILE" ]]; then
+        echo "错误: Profile '$PROFILE' 不存在。"
+        echo "  1. 请确保它存在于 Conan 目录: $PROFILES_DIR"
+        echo "  2. 或者将其放入项目目录: $PROJECT_PROFILES"
+        echo ""
+        list_profiles
+        exit 1
+    fi
+else
+    # 如果用户既没指定 -p 也没指定 -l，则提示用法
     echo "未指定 profile (-p)"
     echo ""
     list_profiles
@@ -70,24 +91,15 @@ if [[ -z "$PROFILE" ]]; then
     exit 1
 fi
 
-# 检查 profile 是否存在
-if [[ ! -f "$PROFILES_DIR/$PROFILE" ]]; then
-    echo "Profile '$PROFILE' 不存在于 $PROFILES_DIR"
-    echo ""
-    list_profiles
-    exit 1
-fi
-
-# 自动生成构建目录名（如果未指定）
+# === 第四步：确定构建目录 ===
 if [[ -z "$BUILD_DIR" ]]; then
     BUILD_DIR="build-${PROFILE}"
 fi
-
 BUILD_PATH="$PROJECT_ROOT/$BUILD_DIR"
 
 echo "正在初始化构建环境..."
-echo "   Profile:    $PROFILE"
-echo "   Build dir:  $BUILD_PATH"
+echo "   Profile:      $PROFILE"
+echo "   Build dir:    $BUILD_PATH"
 echo "   Profiles dir: $PROFILES_DIR"
 echo ""
 
@@ -96,7 +108,7 @@ mkdir -p "$BUILD_PATH"
 cd "$BUILD_PATH"
 
 # Step 1: 安装依赖
-echo "运行 conan install ..."
+echo "📦 运行 conan install ..."
 conan install "$PROJECT_ROOT" \
     --output-folder=. \
     --profile:host="$PROFILE" \
@@ -104,7 +116,7 @@ conan install "$PROJECT_ROOT" \
     --build=missing
 
 # Step 2: 配置 CMake
-echo "运行 cmake 配置 ..."
+echo "⚙️  运行 cmake 配置 ..."
 
 # 判断是否为本地构建（用于设置 CMAKE_BUILD_TYPE）
 if [[ "$PROFILE" == "debug" ]]; then
@@ -112,7 +124,7 @@ if [[ "$PROFILE" == "debug" ]]; then
 elif [[ "$PROFILE" == "release" ]]; then
     CMAKE_BUILD_TYPE="Release"
 else
-    # 交叉编译或其他自定义 profile：默认设为 Release（可按需调整）
+    # 交叉编译或其他自定义 profile：默认设为 Release
     CMAKE_BUILD_TYPE="Release"
 fi
 
@@ -121,5 +133,5 @@ cmake "$PROJECT_ROOT" \
     -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
 
 echo ""
-echo "初始化完成！"
+echo "✅ 初始化完成！"
 echo "构建命令: cd $BUILD_DIR && cmake --build ."

@@ -1,0 +1,41 @@
+# .github/workflows/ci.yml
+name: CI on Ubuntu 20.04
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04  # 明确指定 Ubuntu 20.04
+    strategy:
+      matrix:
+        conan_profile: [debug, release]  # 可扩展为 ['debug', 'release', 'arm-linux'] 等
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'  # Conan 2.x 推荐 Python ≥ 3.8
+
+      - name: Install Conan
+        run: |
+          pip install conan
+          conan profile detect --force  # 自动检测并生成 default profile
+
+      - name: Run init.sh for ${{ matrix.conan_profile }}
+        run: |
+          chmod +x ./init.sh
+          ./init.sh -p ${{ matrix.conan_profile }}
+
+      - name: Build project (${{ matrix.conan_profile }})
+        run: |
+          BUILD_DIR="build-${{ matrix.conan_profile }}"
+          cmake --build "$BUILD_DIR" --config ${{ matrix.conan_profile == 'debug' && 'Debug' || 'Release' }}
+
+      - name: Run tests (if any)
+        if: ${{ !contains(matrix.conan_profile, 'arm') }}  # 交叉编译通常不运行测试
+        run: |
+          BUILD_DIR="build-${{ matrix.conan_profile }}"
+          cd "$BUILD_DIR"
+          ctest --output-on-failure
