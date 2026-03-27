@@ -1,7 +1,8 @@
 # .github/workflows/ci.yml
-name: CI on Ubuntu 20.04
+name: CI on Ubuntu-latest
 
-on: [push, pull_request]
+on: [] #不触发
+# on: [push, pull_request]
 
 jobs:
   build:

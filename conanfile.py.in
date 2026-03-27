@@ -1,10 +1,10 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain
 
-class HelloConan(ConanFile):
+class {{name.title()}}Conan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps"
-
+    exports_sources = "CMakeLists.txt", "src/*", "tests/*", "include/*", "cmake/*" ,".github/workflows/*"
     # we can find other packages in url "https://conan.org.cn/center?"
     def requirements(self):
         self.requires("fmt/12.1.0")

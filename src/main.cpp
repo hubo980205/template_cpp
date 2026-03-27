@@ -3,6 +3,6 @@
 
 int main()
 {
-    fmt::print("Hello, World!\n");
+    fmt::print("Hello, {{name}}!\n");
     return 0;
 }
