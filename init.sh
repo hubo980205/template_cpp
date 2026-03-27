@@ -68,7 +68,7 @@ if [[ -n "$PROFILE" ]]; then
     # 如果项目内存在同名 profile，则同步到 Conan 目录
     if [[ -f "$PROJECT_PROFILES/$PROFILE" ]]; then
         mkdir -p "$PROFILES_DIR"
-        echo "ℹ️ 使用项目内 profile: $PROJECT_PROFILES/$PROFILE"
+        echo "使用项目内 profile: $PROJECT_PROFILES/$PROFILE"
         cp "$PROJECT_PROFILES/$PROFILE" "$PROFILES_DIR/"
     fi
 
@@ -108,7 +108,7 @@ mkdir -p "$BUILD_PATH"
 cd "$BUILD_PATH"
 
 # Step 1: 安装依赖
-echo "📦 运行 conan install ..."
+echo "运行 conan install ..."
 conan install "$PROJECT_ROOT" \
     --output-folder=. \
     --profile:host="$PROFILE" \
@@ -116,7 +116,7 @@ conan install "$PROJECT_ROOT" \
     --build=missing
 
 # Step 2: 配置 CMake
-echo "⚙️  运行 cmake 配置 ..."
+echo "运行 cmake 配置 ..."
 
 # 判断是否为本地构建（用于设置 CMAKE_BUILD_TYPE）
 if [[ "$PROFILE" == "debug" ]]; then
@@ -133,5 +133,5 @@ cmake "$PROJECT_ROOT" \
     -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
 
 echo ""
-echo "✅ 初始化完成！"
+echo "初始化完成！"
 echo "构建命令: cd $BUILD_DIR && cmake --build ."

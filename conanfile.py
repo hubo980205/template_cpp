@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain
 
-class {{name.title()}}Conan(ConanFile):
+class HelloConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps"
     exports_sources = "CMakeLists.txt", "src/*", "tests/*", "include/*", "cmake/*" ,".github/workflows/*"
